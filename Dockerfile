@@ -2,6 +2,7 @@
 
 ARG DEBIAN_RELEASE=bookworm
 ARG NODE_VERSION=22
+ARG PROOT_VERSION=5.4.0
 ARG TTYD_VERSION=1.7.7
 
 # QMD uses Node native modules, so build it with npm instead of Bun.
@@ -9,6 +10,19 @@ FROM node:${NODE_VERSION}-${DEBIAN_RELEASE} AS qmd
 ARG QMD_VERSION=latest
 RUN npm_config_nodedir=/usr/local npm install -g "@tobilu/qmd@${QMD_VERSION}" \
  && qmd --version
+
+# Bookworm ships PRoot 5.1.0, which is incompatible with recent kernels.
+FROM node:${NODE_VERSION}-${DEBIAN_RELEASE} AS proot
+ARG PROOT_VERSION
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+ && apt-get -o Acquire::Retries=10 update \
+ && apt-get -o Acquire::Retries=10 install -y --no-install-recommends libtalloc-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && git clone --branch "v${PROOT_VERSION}" --depth=1 --recurse-submodules --shallow-submodules \
+      https://github.com/proot-me/proot.git /tmp/proot \
+ && make -C /tmp/proot/src -f GNUmakefile \
+ && strip /tmp/proot/src/proot \
+ && /tmp/proot/src/proot --kill-on-exit -0 /bin/true
 
 # This stage is the persistent guest userspace template.
 FROM node:${NODE_VERSION}-${DEBIAN_RELEASE}-slim AS guest
@@ -60,7 +74,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ca-certificates curl proot python3 \
+      ca-certificates curl libtalloc2 python3 \
  && rm -rf /var/lib/apt/lists/* \
  && case "$TARGETARCH" in \
       amd64) ttyd_arch=x86_64; ttyd_sha256=8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55 ;; \
@@ -72,6 +86,7 @@ RUN apt-get update \
  && echo "${ttyd_sha256}  /usr/local/bin/ttyd" | sha256sum -c - \
  && chmod +x /usr/local/bin/ttyd
 
+COPY --from=proot /tmp/proot/src/proot /usr/local/bin/proot
 COPY --from=guest / /opt/workspace-rootfs-template/
 COPY runtime/bin/ /usr/local/bin/
 RUN chmod +x /usr/local/bin/workspace-*
