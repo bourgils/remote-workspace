@@ -1,6 +1,7 @@
 services:
   workspace:
     image: ${WORKSPACE_RUNTIME_IMAGE:-ghcr.io/bourgils/remote-workspace:latest}
+    pull_policy: always
     restart: unless-stopped
     init: true
     environment:
