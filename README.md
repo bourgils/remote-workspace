@@ -87,22 +87,16 @@ SHELL_USERNAME=workspace
 SHELL_PASSWORD=...
 ```
 
-Additional variables for the Obsidian preset:
-
-```env
-OBSIDIAN_USERNAME=obsidian
-OBSIDIAN_PASSWORD=...
-```
-
 For the Obsidian preset, assign three domains in Coolify:
 
 ```text
 oc.example.com    -> workspace:4096
 shell.example.com -> workspace:7681
-notes.example.com -> obsidian:3000
+notes.example.com -> obsidian:8080
 ```
 
 The Coolify presets use only `expose`, not host `ports`.
+Ignis has no built-in authentication: protect `notes.example.com` upstream and use HTTPS.
 
 For a host/NAS mount use `dist/coolify-bind.yaml` and set:
 

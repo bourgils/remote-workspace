@@ -28,22 +28,20 @@ services:
       start_period: 30s
 
   obsidian:
-    image: ${OBSIDIAN_IMAGE:-lscr.io/linuxserver/obsidian:latest}
+    image: ${IGNIS_IMAGE:-nobbe/ignis:latest}
     restart: unless-stopped
     environment:
       PUID: "0"
       PGID: "0"
-      TZ: ${TZ:-Europe/Paris}
-      CUSTOM_USER: ${OBSIDIAN_USERNAME:?Set OBSIDIAN_USERNAME}
-      PASSWORD: ${OBSIDIAN_PASSWORD:?Set OBSIDIAN_PASSWORD}
     volumes:
-      - obsidian-config:/config
-      - workspace-data:/workspace
+      - workspace-data:/vaults
+      - ignis-data:/app/data
+      - obsidian-app:/app/obsidian-app
     expose:
-      - "3000"
-    shm_size: "1gb"
+      - "8080"
 
 volumes:
   machine-state:
   workspace-data:
-  obsidian-config:
+  ignis-data:
+  obsidian-app:
