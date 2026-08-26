@@ -18,7 +18,7 @@ fi
 zshrc="$ROOTFS/root/.zshrc"
 if [[ -f "$zshrc" ]]; then
   case "$(sha256sum "$zshrc" | cut -d ' ' -f 1)" in
-    2330f2d4dd5e89fabfdc547a821fe87ebfc2b08ad82e9330091d4baa7dece12a|a8a88b15f4264967328d2f39375f7a0b4689c3ac9419f0cd490a22b60366209f)
+    2330f2d4dd5e89fabfdc547a821fe87ebfc2b08ad82e9330091d4baa7dece12a|a8a88b15f4264967328d2f39375f7a0b4689c3ac9419f0cd490a22b60366209f|60515752b8027df6ef92d9809201d7ad34cfa60a81b39d8b78993beb0c5b1369)
       echo "[workspace] upgrading default zsh configuration"
       cp "$TEMPLATE/root/.zshrc" "$zshrc"
       ;;
