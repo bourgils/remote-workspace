@@ -10,7 +10,7 @@ services:
     image: ${OBSIDIAN_IMAGE:?Set OBSIDIAN_IMAGE}
     restart: unless-stopped
     volumes:
-      - workspace-data:/vaults
+      - workspace-data:/vaults/${WORKSPACE_NAME:-workspace}
 
 volumes:
   machine-state:

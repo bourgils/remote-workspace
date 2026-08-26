@@ -12,7 +12,7 @@ The design has two independent storage layers:
 /workspace     -> user-provided workspace (volume, bind, NFS, adapter, ...)
 ```
 
-`WORKSPACE_NAME` is 100% configurable and is metadata only. The internal mount point is always `/workspace`.
+`WORKSPACE_NAME` is configurable. The internal workspace mount point is always `/workspace`.
 
 ## Default machine
 
@@ -132,7 +132,9 @@ See `docs/STORAGE.md`.
 
 ## Obsidian
 
-Obsidian is intentionally not part of the core. `examples/obsidian/compose.yaml` demonstrates the contract: mount the same `workspace-data` volume at `/vaults` in your chosen Obsidian container.
+Obsidian is intentionally not part of the core. `examples/obsidian/compose.yaml` demonstrates the contract: mount the same `workspace-data` volume as one vault under `/vaults` in your chosen Obsidian container.
+
+In the Coolify Obsidian preset, OpenCode's project picker is rooted at `/workspace`, the shell starts in `/workspace`, and Ignis opens the same volume as `/vaults/$WORKSPACE_NAME`.
 
 ## Security and VM semantics
 
