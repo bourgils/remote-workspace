@@ -75,6 +75,8 @@ dist/coolify-build.yaml
 
 If you publish the OCI image to GHCR first, use `dist/coolify-volume.yaml`.
 
+For the workspace and Obsidian sharing the same volume, use `dist/coolify-obsidian.yaml`.
+
 Required variables:
 
 ```env
@@ -85,11 +87,19 @@ SHELL_USERNAME=workspace
 SHELL_PASSWORD=...
 ```
 
-Assign two domains in Coolify:
+Additional variables for the Obsidian preset:
+
+```env
+OBSIDIAN_USERNAME=obsidian
+OBSIDIAN_PASSWORD=...
+```
+
+For the Obsidian preset, assign three domains in Coolify:
 
 ```text
 oc.example.com    -> workspace:4096
 shell.example.com -> workspace:7681
+notes.example.com -> obsidian:3000
 ```
 
 The Coolify presets use only `expose`, not host `ports`.
