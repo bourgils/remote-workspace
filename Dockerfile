@@ -41,7 +41,8 @@ RUN curl -fsSL https://bun.sh/install | bash \
  && /root/.bun/bin/bun install -g "opencode-ai@${OPENCODE_VERSION}"
 
 COPY --from=qmd /usr/local/lib/node_modules/@tobilu/qmd /usr/local/lib/node_modules/@tobilu/qmd
-RUN ln -s ../lib/node_modules/@tobilu/qmd/bin/qmd /usr/local/bin/qmd \
+RUN ln -s /bin/true /usr/local/bin/xdg-open \
+ && ln -s ../lib/node_modules/@tobilu/qmd/bin/qmd /usr/local/bin/qmd \
  && qmd --version
 
 # Oh My Zsh without running its interactive installer.

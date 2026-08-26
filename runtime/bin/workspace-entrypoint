@@ -16,6 +16,7 @@ trap cleanup TERM INT EXIT
 # One browser tab = one independent ttyd PTY = one independent login shell.
 # No tmux/session reuse by design.
 ttyd \
+  --debug 3 \
   --port "${SHELL_PORT:-7681}" \
   --writable \
   --check-origin \
