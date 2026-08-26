@@ -87,6 +87,13 @@ SHELL_USERNAME=workspace
 SHELL_PASSWORD=...
 ```
 
+Additional variables for the Obsidian preset:
+
+```env
+OBSIDIAN_USERNAME=obsidian
+OBSIDIAN_PASSWORD_HASH=<bcrypt hash generated with htpasswd -nbB>
+```
+
 For the Obsidian preset, assign three domains in Coolify:
 
 ```text
@@ -96,7 +103,7 @@ notes.example.com -> obsidian:8080
 ```
 
 The Coolify presets use only `expose`, not host `ports`.
-Ignis has no built-in authentication: protect `notes.example.com` upstream and use HTTPS.
+The Obsidian preset protects Ignis with a Traefik Basic Auth middleware. Use HTTPS.
 
 For a host/NAS mount use `dist/coolify-bind.yaml` and set:
 
