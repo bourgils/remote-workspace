@@ -1,12 +1,18 @@
 # syntax=docker/dockerfile:1
 
 ARG DEBIAN_RELEASE=bookworm
+ARG NODE_VERSION=22
 ARG TTYD_VERSION=1.7.7
 
-# This stage is the persistent guest userspace template.
-FROM debian:${DEBIAN_RELEASE}-slim AS guest
-ARG OPENCODE_VERSION=latest
+# QMD uses Node native modules, so build it with npm instead of Bun.
+FROM node:${NODE_VERSION}-${DEBIAN_RELEASE} AS qmd
 ARG QMD_VERSION=latest
+RUN npm_config_nodedir=/usr/local npm install -g "@tobilu/qmd@${QMD_VERSION}" \
+ && qmd --version
+
+# This stage is the persistent guest userspace template.
+FROM node:${NODE_VERSION}-${DEBIAN_RELEASE}-slim AS guest
+ARG OPENCODE_VERSION=latest
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -16,9 +22,13 @@ RUN apt-get update \
       procps ripgrep sudo unzip vim-tiny wget zsh \
  && rm -rf /var/lib/apt/lists/*
 
-# Bun is used as the persistent package runtime for OpenCode and qmd.
+# Bun is used as the persistent package runtime for OpenCode.
 RUN curl -fsSL https://bun.sh/install | bash \
- && /root/.bun/bin/bun install -g "opencode-ai@${OPENCODE_VERSION}" "@tobilu/qmd@${QMD_VERSION}"
+ && /root/.bun/bin/bun install -g "opencode-ai@${OPENCODE_VERSION}"
+
+COPY --from=qmd /usr/local/lib/node_modules/@tobilu/qmd /usr/local/lib/node_modules/@tobilu/qmd
+RUN ln -s ../lib/node_modules/@tobilu/qmd/bin/qmd /usr/local/bin/qmd \
+ && qmd --version
 
 # Oh My Zsh without running its interactive installer.
 RUN git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh \
