@@ -40,7 +40,7 @@ services:
     expose:
       - "8080"
     labels:
-      - "traefik.http.middlewares.remote-workspace-obsidian-auth.basicauth.users=${OBSIDIAN_USERNAME:?Set OBSIDIAN_USERNAME}:${OBSIDIAN_PASSWORD_HASH:?Set OBSIDIAN_PASSWORD_HASH}"
+      - "traefik.http.middlewares.remote-workspace-obsidian-auth.basicauth.users=${OBSIDIAN_USERNAME}:${OBSIDIAN_PASSWORD_HASH}"
       - "coolify.traefik.middlewares=remote-workspace-obsidian-auth"
 
 volumes:
