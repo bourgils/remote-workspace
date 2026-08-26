@@ -73,7 +73,7 @@ autoload -Uz add-zsh-hook vcs_info
 add-zsh-hook precmd vcs_info
 zstyle ':vcs_info:git:*' formats '%F{red}git:(%F{yellow}%b%F{red})%f'
 zstyle ':vcs_info:git:*' actionformats '%F{red}git:(%F{yellow}%b|%a%F{red})%f'
-PROMPT='%F{cyan}%n@%m%f %F{green}➜%f %F{blue}%~%f ${vcs_info_msg_0_} '
+PROMPT='%F{magenta}%n@%m%f %F{green}➜%f %F{cyan}%~%f ${vcs_info_msg_0_} '
 
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000

@@ -15,11 +15,14 @@ if [[ ! -e "$MARKER" ]]; then
   printf '%s\n' "schema=1" "workspace_name=${WORKSPACE_NAME:-workspace}" > "$MARKER"
 fi
 
-legacy_zshrc_sha256=2330f2d4dd5e89fabfdc547a821fe87ebfc2b08ad82e9330091d4baa7dece12a
 zshrc="$ROOTFS/root/.zshrc"
-if [[ -f "$zshrc" ]] && [[ "$(sha256sum "$zshrc" | cut -d ' ' -f 1)" == "$legacy_zshrc_sha256" ]]; then
-  echo "[workspace] upgrading default zsh configuration"
-  cp "$TEMPLATE/root/.zshrc" "$zshrc"
+if [[ -f "$zshrc" ]]; then
+  case "$(sha256sum "$zshrc" | cut -d ' ' -f 1)" in
+    2330f2d4dd5e89fabfdc547a821fe87ebfc2b08ad82e9330091d4baa7dece12a|a8a88b15f4264967328d2f39375f7a0b4689c3ac9419f0cd490a22b60366209f)
+      echo "[workspace] upgrading default zsh configuration"
+      cp "$TEMPLATE/root/.zshrc" "$zshrc"
+      ;;
+  esac
 fi
 
 for plugin in zsh-autosuggestions zsh-completions zsh-syntax-highlighting; do
