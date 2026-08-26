@@ -1,0 +1,4 @@
+volumes:
+  workspace-data:
+    external: true
+    name: ${WORKSPACE_VOLUME_NAME:?Set WORKSPACE_VOLUME_NAME}

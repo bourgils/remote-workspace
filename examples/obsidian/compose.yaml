@@ -1,0 +1,17 @@
+# Example only: add your preferred Obsidian web/desktop container and point it at
+# the exact same workspace-data volume. The core runtime has no Obsidian dependency.
+services:
+  workspace:
+    volumes:
+      - machine-state:/state
+      - workspace-data:/workspace
+
+  obsidian:
+    image: ${OBSIDIAN_IMAGE:?Set OBSIDIAN_IMAGE}
+    restart: unless-stopped
+    volumes:
+      - workspace-data:/vaults
+
+volumes:
+  machine-state:
+  workspace-data:

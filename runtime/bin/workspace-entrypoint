@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${OPENCODE_SERVER_PASSWORD:?OPENCODE_SERVER_PASSWORD is required}"
+: "${SHELL_PASSWORD:?SHELL_PASSWORD is required}"
+/usr/local/bin/workspace-bootstrap
+
+pids=()
+cleanup() {
+  trap - TERM INT EXIT
+  for pid in "${pids[@]:-}"; do kill -TERM "$pid" 2>/dev/null || true; done
+  wait 2>/dev/null || true
+}
+trap cleanup TERM INT EXIT
+
+# One browser tab = one independent ttyd PTY = one independent login shell.
+# No tmux/session reuse by design.
+ttyd \
+  --port "${SHELL_PORT:-7681}" \
+  --writable \
+  --check-origin \
+  --credential "${SHELL_USERNAME:-workspace}:${SHELL_PASSWORD}" \
+  /usr/local/bin/workspace-shell &
+pids+=("$!")
+
+/usr/local/bin/workspace-opencode &
+pids+=("$!")
+
+# Exit the container if either core service exits.
+wait -n "${pids[@]}"
+status=$?
+echo "[workspace] a core service exited with status $status" >&2
+exit "$status"

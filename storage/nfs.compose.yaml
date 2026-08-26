@@ -1,0 +1,7 @@
+volumes:
+  workspace-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_SERVER:?Set NFS_SERVER},rw,nfsvers=4
+      device: :${NFS_PATH:?Set NFS_PATH}

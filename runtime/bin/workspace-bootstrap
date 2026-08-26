@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_PATH="${STATE_PATH:-/state}"
+ROOTFS="$STATE_PATH/rootfs"
+TEMPLATE=/opt/workspace-rootfs-template
+MARKER="$ROOTFS/.remote-workspace-initialized"
+
+mkdir -p "$STATE_PATH" "${WORKSPACE_PATH:-/workspace}"
+
+if [[ ! -e "$MARKER" ]]; then
+  echo "[workspace] initializing persistent machine rootfs in $ROOTFS"
+  mkdir -p "$ROOTFS"
+  cp -a "$TEMPLATE"/. "$ROOTFS"/
+  printf '%s\n' "schema=1" "workspace_name=${WORKSPACE_NAME:-workspace}" > "$MARKER"
+fi
+
+# Host DNS/hosts are bind-mounted at execution time; no host identity is persisted here.
+mkdir -p "$ROOTFS/etc"

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_PATH="${STATE_PATH:-/state}"
+ROOTFS="$STATE_PATH/rootfs"
+WORKSPACE_PATH="${WORKSPACE_PATH:-/workspace}"
+GUEST_CWD="${WORKSPACE_CWD:-/workspace}"
+
+[[ -d "$ROOTFS" ]] || { echo "persistent rootfs missing: $ROOTFS" >&2; exit 70; }
+[[ -d "$WORKSPACE_PATH" ]] || { echo "workspace mount missing: $WORKSPACE_PATH" >&2; exit 71; }
+
+# Preserve deployment-provided environment variables while overriding guest identity/path.
+exec env \
+  HOME=/root \
+  USER=root \
+  LOGNAME=root \
+  SHELL=/bin/zsh \
+  TERM="${TERM:-xterm-256color}" \
+  WORKSPACE_PATH=/workspace \
+  PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  proot --kill-on-exit -0 \
+    -r "$ROOTFS" \
+    -b "$WORKSPACE_PATH:/workspace" \
+    -b /dev \
+    -b /proc \
+    -b /sys \
+    -b /etc/resolv.conf:/etc/resolv.conf \
+    -b /etc/hosts:/etc/hosts \
+    -w "$GUEST_CWD" \
+    "$@"
