@@ -47,12 +47,46 @@ RUN ln -s /bin/true /usr/local/bin/xdg-open \
 
 # Oh My Zsh without running its interactive installer.
 RUN git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh \
+ && git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git \
+      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions \
+ && git clone --depth=1 https://github.com/zsh-users/zsh-completions.git \
+      /root/.oh-my-zsh/custom/plugins/zsh-completions \
+ && git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git \
+      /root/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting \
  && cat > /root/.zshrc <<'ZSHRC'
 export ZSH="$HOME/.oh-my-zsh"
-plugins=(git)
+export ZSH_CUSTOM="${ZSH_CUSTOM:-$ZSH/custom}"
+
 ZSH_THEME="robbyrussell"
+fpath=("$ZSH_CUSTOM/plugins/zsh-completions/src" $fpath)
+plugins=(git sudo zsh-autosuggestions)
+
 export PATH="$HOME/.bun/bin:$PATH"
 source "$ZSH/oh-my-zsh.sh"
+
+setopt PROMPT_SUBST COMPLETE_IN_WORD HIST_IGNORE_DUPS SHARE_HISTORY
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+
+autoload -Uz add-zsh-hook vcs_info
+add-zsh-hook precmd vcs_info
+zstyle ':vcs_info:git:*' formats '%F{red}git:(%F{yellow}%b%F{red})%f'
+zstyle ':vcs_info:git:*' actionformats '%F{red}git:(%F{yellow}%b|%a%F{red})%f'
+PROMPT='%F{cyan}%n@%m%f %F{green}➜%f %F{blue}%~%f ${vcs_info_msg_0_} '
+
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=10000
+
+alias ll='ls -lah'
+alias la='ls -A'
+alias l='ls -CF'
+
+export NVM_DIR="$HOME/.nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+
+source "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 ZSHRC
 
 COPY runtime/bin/workspace-url /usr/local/bin/workspace-url

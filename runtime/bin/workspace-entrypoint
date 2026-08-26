@@ -20,6 +20,7 @@ ttyd \
   --port "${SHELL_PORT:-7681}" \
   --writable \
   --check-origin \
+  --client-option 'theme={"background":"#000000"}' \
   --credential "${SHELL_USERNAME:-workspace}:${SHELL_PASSWORD}" \
   /usr/local/bin/workspace-shell &
 pids+=("$!")

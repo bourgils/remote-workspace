@@ -21,8 +21,8 @@ The persistent Debian userspace includes:
 - OpenCode
 - git
 - qmd (`@tobilu/qmd`)
-- zsh + Oh My Zsh
-- Oh My Zsh `git` plugin
+- zsh + Oh My Zsh with command completion, autosuggestions, syntax highlighting, Git prompt and shared history
+- Oh My Zsh `git` and `sudo` plugins
 - curl, wget, jq, ripgrep, fzf, vim/nano, SSH client
 - Bun
 

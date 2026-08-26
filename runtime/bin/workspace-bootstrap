@@ -15,5 +15,21 @@ if [[ ! -e "$MARKER" ]]; then
   printf '%s\n' "schema=1" "workspace_name=${WORKSPACE_NAME:-workspace}" > "$MARKER"
 fi
 
+legacy_zshrc_sha256=2330f2d4dd5e89fabfdc547a821fe87ebfc2b08ad82e9330091d4baa7dece12a
+zshrc="$ROOTFS/root/.zshrc"
+if [[ -f "$zshrc" ]] && [[ "$(sha256sum "$zshrc" | cut -d ' ' -f 1)" == "$legacy_zshrc_sha256" ]]; then
+  echo "[workspace] upgrading default zsh configuration"
+  cp "$TEMPLATE/root/.zshrc" "$zshrc"
+fi
+
+for plugin in zsh-autosuggestions zsh-completions zsh-syntax-highlighting; do
+  source_path="$TEMPLATE/root/.oh-my-zsh/custom/plugins/$plugin"
+  target_path="$ROOTFS/root/.oh-my-zsh/custom/plugins/$plugin"
+  if [[ ! -e "$target_path" ]]; then
+    mkdir -p "$(dirname "$target_path")"
+    cp -a "$source_path" "$target_path"
+  fi
+done
+
 # Host DNS/hosts are bind-mounted at execution time; no host identity is persisted here.
 mkdir -p "$ROOTFS/etc"
