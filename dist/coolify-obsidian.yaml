@@ -34,7 +34,7 @@ services:
       PUID: "0"
       PGID: "0"
     volumes:
-      - workspace-data:/vaults/${WORKSPACE_NAME:-obsidian}
+      - workspace-data:/vaults
       - ignis-data:/app/data
       - obsidian-app:/app/obsidian-app
     expose:

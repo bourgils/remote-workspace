@@ -134,7 +134,7 @@ See `docs/STORAGE.md`.
 
 Obsidian is intentionally not part of the core. `examples/obsidian/compose.yaml` demonstrates the contract: mount the same `workspace-data` volume as one vault under `/vaults` in your chosen Obsidian container.
 
-In the Coolify Obsidian preset, OpenCode's project picker is rooted at `/workspace`, the shell starts in `/workspace`, and Ignis opens the same volume as `/vaults/$WORKSPACE_NAME`.
+In the Coolify Obsidian preset, OpenCode's project picker is rooted at `/workspace`, the shell starts in `/workspace`, and Ignis exposes each direct subdirectory of that same volume as a vault under `/vaults`.
 
 ## Security and VM semantics
 
