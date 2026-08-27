@@ -31,11 +31,12 @@ ttyd_args=(
   --debug 3
   --port "${SHELL_PORT:-7681}"
   --writable
-  --check-origin
   --client-option 'theme={"background":"#000000"}'
 )
 if auth_enabled SHELL_AUTH_ENABLED "${SHELL_AUTH_ENABLED:-true}"; then
   ttyd_args+=(--credential "${SHELL_USERNAME:-workspace}:${SHELL_PASSWORD}")
+else
+  ttyd_args+=(--auth-header X-Auth-User)
 fi
 ttyd "${ttyd_args[@]}" /usr/local/bin/workspace-shell &
 pids+=("$!")
