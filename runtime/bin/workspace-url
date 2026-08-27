@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-raw="${1:-/workspace}"
+home="${HOME:-/home/workspace}"
+raw="${1:-$home}"
 case "$raw" in
   /*) candidate="$raw" ;;
-  *) candidate="/workspace/$raw" ;;
+  ~) candidate="$home" ;;
+  ~/*) candidate="$home/${raw#~/}" ;;
+  *) candidate="$home/$raw" ;;
 esac
 resolved="$(readlink -f -- "$candidate" 2>/dev/null || true)"
 [[ -n "$resolved" && -d "$resolved" ]] || { echo "directory does not exist: $candidate" >&2; exit 2; }
 case "$resolved" in
-  /workspace|/workspace/*) ;;
-  *) echo "path must stay inside /workspace" >&2; exit 3 ;;
+  "$home"|"$home"/*) ;;
+  *) echo "path must stay inside $home" >&2; exit 3 ;;
 esac
 encoded="$(printf '%s' "$resolved" | base64 -w0)"
 base="${OPENCODE_PUBLIC_URL:-http://localhost:4096}"

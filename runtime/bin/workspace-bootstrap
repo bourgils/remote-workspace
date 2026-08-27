@@ -2,36 +2,67 @@
 set -euo pipefail
 
 STATE_PATH="${STATE_PATH:-/state}"
+WORKSPACE_HOME="${WORKSPACE_HOME:-/home/workspace}"
+WORKSPACE_SOURCE="${WORKSPACE_SOURCE:-/mnt/workspace}"
 ROOTFS="$STATE_PATH/rootfs"
-TEMPLATE=/opt/workspace-rootfs-template
+ROOTFS_TEMPLATE=/opt/workspace-rootfs-template
+HOME_TEMPLATE=/opt/workspace-home-template
 MARKER="$ROOTFS/.remote-workspace-initialized"
 
-mkdir -p "$STATE_PATH" "${WORKSPACE_PATH:-/workspace}"
+case "$WORKSPACE_HOME" in
+  /*) ;;
+  *) echo "WORKSPACE_HOME must be absolute: $WORKSPACE_HOME" >&2; exit 64 ;;
+esac
+case "$WORKSPACE_SOURCE" in
+  /*) ;;
+  *) echo "WORKSPACE_SOURCE must be absolute: $WORKSPACE_SOURCE" >&2; exit 64 ;;
+esac
+
+mkdir -p "$STATE_PATH" "$WORKSPACE_SOURCE"
 
 if [[ ! -e "$MARKER" ]]; then
   echo "[workspace] initializing persistent machine rootfs in $ROOTFS"
   mkdir -p "$ROOTFS"
-  cp -a "$TEMPLATE"/. "$ROOTFS"/
-  printf '%s\n' "schema=1" "workspace_name=${WORKSPACE_NAME:-workspace}" > "$MARKER"
+  cp -a "$ROOTFS_TEMPLATE"/. "$ROOTFS"/
+  printf '%s\n' "schema=2" "workspace_name=${WORKSPACE_NAME:-workspace}" > "$MARKER"
+elif ! grep -qx 'schema=2' "$MARKER"; then
+  echo "[workspace] incompatible machine state; create a fresh machine-state volume" >&2
+  exit 72
 fi
 
-zshrc="$ROOTFS/root/.zshrc"
-if [[ -f "$zshrc" ]]; then
-  case "$(sha256sum "$zshrc" | cut -d ' ' -f 1)" in
-    2330f2d4dd5e89fabfdc547a821fe87ebfc2b08ad82e9330091d4baa7dece12a|a8a88b15f4264967328d2f39375f7a0b4689c3ac9419f0cd490a22b60366209f|60515752b8027df6ef92d9809201d7ad34cfa60a81b39d8b78993beb0c5b1369)
-      echo "[workspace] upgrading default zsh configuration"
-      cp "$TEMPLATE/root/.zshrc" "$zshrc"
+mkdir -p "$ROOTFS$WORKSPACE_HOME"
+
+zshrc="$WORKSPACE_SOURCE/.zshrc"
+zshrc_marker="$WORKSPACE_SOURCE/.remote-workspace-zshrc.sha256"
+template_zshrc="$HOME_TEMPLATE/.zshrc"
+template_hash="$(sha256sum "$template_zshrc" | cut -d ' ' -f 1)"
+
+if [[ ! -e "$zshrc" ]]; then
+  echo "[workspace] installing default zsh configuration"
+  cp "$template_zshrc" "$zshrc"
+  printf '%s\n' "$template_hash" > "$zshrc_marker"
+elif [[ -f "$zshrc" && -f "$zshrc_marker" ]]; then
+  current_hash="$(sha256sum "$zshrc" | cut -d ' ' -f 1)"
+  managed_hash="$(head -n 1 "$zshrc_marker")"
+  if [[ "$current_hash" == "$managed_hash" && "$current_hash" != "$template_hash" ]]; then
+    echo "[workspace] upgrading default zsh configuration"
+    cp "$template_zshrc" "$zshrc"
+    printf '%s\n' "$template_hash" > "$zshrc_marker"
+  fi
+fi
+
+IFS=',' read -ra required_dirs <<< "${WORKSPACE_BOOTSTRAP_DIRS:-}"
+for required_dir in "${required_dirs[@]}"; do
+  required_dir="${required_dir#"${required_dir%%[![:space:]]*}"}"
+  required_dir="${required_dir%"${required_dir##*[![:space:]]}"}"
+  case "$required_dir" in
+    "") continue ;;
+    /*|..|../*|*/..|*/../*)
+      echo "invalid WORKSPACE_BOOTSTRAP_DIRS entry: $required_dir" >&2
+      exit 64
       ;;
   esac
-fi
-
-for plugin in zsh-autosuggestions zsh-completions zsh-syntax-highlighting; do
-  source_path="$TEMPLATE/root/.oh-my-zsh/custom/plugins/$plugin"
-  target_path="$ROOTFS/root/.oh-my-zsh/custom/plugins/$plugin"
-  if [[ ! -e "$target_path" ]]; then
-    mkdir -p "$(dirname "$target_path")"
-    cp -a "$source_path" "$target_path"
-  fi
+  mkdir -p "$WORKSPACE_SOURCE/$required_dir"
 done
 
 # Host DNS/hosts are bind-mounted at execution time; no host identity is persisted here.

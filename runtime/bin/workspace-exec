@@ -3,24 +3,27 @@ set -euo pipefail
 
 STATE_PATH="${STATE_PATH:-/state}"
 ROOTFS="$STATE_PATH/rootfs"
-WORKSPACE_PATH="${WORKSPACE_PATH:-/workspace}"
-GUEST_CWD="${WORKSPACE_CWD:-/workspace}"
+WORKSPACE_HOME="${WORKSPACE_HOME:-/home/workspace}"
+WORKSPACE_SOURCE="${WORKSPACE_SOURCE:-/mnt/workspace}"
+GUEST_CWD="${WORKSPACE_CWD:-$WORKSPACE_HOME}"
 
 [[ -d "$ROOTFS" ]] || { echo "persistent rootfs missing: $ROOTFS" >&2; exit 70; }
-[[ -d "$WORKSPACE_PATH" ]] || { echo "workspace mount missing: $WORKSPACE_PATH" >&2; exit 71; }
+[[ -d "$WORKSPACE_SOURCE" ]] || { echo "workspace mount missing: $WORKSPACE_SOURCE" >&2; exit 71; }
+[[ -d "$ROOTFS$WORKSPACE_HOME" ]] || { echo "guest home missing: $WORKSPACE_HOME" >&2; exit 72; }
 
 # Preserve deployment-provided environment variables while overriding guest identity/path.
 exec env \
-  HOME=/root \
+  HOME="$WORKSPACE_HOME" \
   USER=root \
   LOGNAME=root \
   SHELL=/bin/zsh \
   TERM="${TERM:-xterm-256color}" \
-  WORKSPACE_PATH=/workspace \
-  PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  BUN_INSTALL=/opt/bun \
+  WORKSPACE_PATH="$WORKSPACE_HOME" \
+  PATH=/opt/bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
   proot --kill-on-exit -0 \
     -r "$ROOTFS" \
-    -b "$WORKSPACE_PATH:/workspace" \
+    -b "$WORKSPACE_SOURCE:$WORKSPACE_HOME" \
     -b /dev \
     -b /proc \
     -b /sys \

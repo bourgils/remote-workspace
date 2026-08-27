@@ -26,8 +26,9 @@ RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.l
 
 # This stage is the persistent guest userspace template.
 FROM node:${NODE_VERSION}-${DEBIAN_RELEASE}-slim AS guest
-ARG OPENCODE_VERSION=latest
+ARG OPENCODE_VERSION=1.18.23
 ENV DEBIAN_FRONTEND=noninteractive
+ENV BUN_INSTALL=/opt/bun
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
@@ -36,9 +37,9 @@ RUN apt-get update \
       procps ripgrep sudo unzip vim-tiny wget zsh \
  && rm -rf /var/lib/apt/lists/*
 
-# Bun is used as the persistent package runtime for OpenCode.
+# Bun and OpenCode live outside the workspace-backed home.
 RUN curl -fsSL https://bun.sh/install | bash \
- && /root/.bun/bin/bun install -g "opencode-ai@${OPENCODE_VERSION}"
+ && /opt/bun/bin/bun install -g "opencode-ai@${OPENCODE_VERSION}"
 
 COPY --from=qmd /usr/local/lib/node_modules/@tobilu/qmd /usr/local/lib/node_modules/@tobilu/qmd
 RUN ln -s /bin/true /usr/local/bin/xdg-open \
@@ -46,22 +47,26 @@ RUN ln -s /bin/true /usr/local/bin/xdg-open \
  && qmd --version
 
 # Oh My Zsh without running its interactive installer.
-RUN git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh \
+RUN git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /opt/oh-my-zsh \
  && git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git \
-      /root/.oh-my-zsh/custom/plugins/zsh-autosuggestions \
+      /opt/oh-my-zsh/custom/plugins/zsh-autosuggestions \
  && git clone --depth=1 https://github.com/zsh-users/zsh-completions.git \
-      /root/.oh-my-zsh/custom/plugins/zsh-completions \
+      /opt/oh-my-zsh/custom/plugins/zsh-completions \
  && git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git \
-      /root/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting \
- && cat > /root/.zshrc <<'ZSHRC'
-export ZSH="$HOME/.oh-my-zsh"
+      /opt/oh-my-zsh/custom/plugins/zsh-syntax-highlighting \
+ && mkdir -p /home/workspace /opt/workspace-home-template \
+ && sed -i 's|^root:x:0:0:root:/root:|root:x:0:0:root:/home/workspace:|' /etc/passwd \
+ && test "$(getent passwd root | cut -d: -f6)" = /home/workspace \
+ && cat > /opt/workspace-home-template/.zshrc <<'ZSHRC'
+export ZSH="/opt/oh-my-zsh"
 export ZSH_CUSTOM="${ZSH_CUSTOM:-$ZSH/custom}"
 
 ZSH_THEME="robbyrussell"
 fpath=("$ZSH_CUSTOM/plugins/zsh-completions/src" $fpath)
 plugins=(git sudo zsh-autosuggestions)
 
-export PATH="$HOME/.bun/bin:$PATH"
+export BUN_INSTALL="/opt/bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
 source "$ZSH/oh-my-zsh.sh"
 
 setopt PROMPT_SUBST COMPLETE_IN_WORD HIST_IGNORE_DUPS SHARE_HISTORY
@@ -92,9 +97,10 @@ ZSHRC
 COPY runtime/bin/workspace-url /usr/local/bin/workspace-url
 RUN chmod +x /usr/local/bin/workspace-url
 
-RUN cat > /etc/profile.d/workspace.sh <<'EOF_PROFILE'
-export PATH="$HOME/.bun/bin:$PATH"
-export WORKSPACE_PATH="${WORKSPACE_PATH:-/workspace}"
+RUN cat >> /etc/profile <<'EOF_PROFILE'
+export BUN_INSTALL="/opt/bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+export WORKSPACE_PATH="${WORKSPACE_PATH:-$HOME}"
 if [ -n "${WORKSPACE_NAME:-}" ]; then
   export WORKSPACE_NAME
 fi
@@ -123,16 +129,18 @@ RUN apt-get update \
 
 COPY --from=proot /tmp/proot/src/proot /usr/local/bin/proot
 COPY --from=guest / /opt/workspace-rootfs-template/
+COPY --from=guest /opt/workspace-home-template/ /opt/workspace-home-template/
 COPY runtime/bin/ /usr/local/bin/
 RUN chmod +x /usr/local/bin/workspace-*
 
 ENV WORKSPACE_NAME=workspace \
-    WORKSPACE_PATH=/workspace \
+    WORKSPACE_HOME=/home/workspace \
+    WORKSPACE_SOURCE=/mnt/workspace \
     STATE_PATH=/state \
     OPENCODE_PORT=4096 \
     SHELL_PORT=7681 \
     TZ=UTC
 
-VOLUME ["/state", "/workspace"]
+VOLUME ["/state", "/mnt/workspace"]
 EXPOSE 4096 7681
 ENTRYPOINT ["/usr/local/bin/workspace-entrypoint"]

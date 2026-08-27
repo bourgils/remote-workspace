@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export WORKSPACE_CWD="${WORKSPACE_CWD:-/workspace}"
+export WORKSPACE_CWD="${WORKSPACE_CWD:-${WORKSPACE_HOME:-/home/workspace}}"
 exec /usr/local/bin/workspace-exec \
   /usr/bin/env \
-  OPENCODE_TEST_HOME=/workspace \
   BROWSER=/bin/true \
-  /root/.bun/bin/opencode web \
+  /opt/bun/bin/opencode web \
   --hostname 0.0.0.0 \
   --port "${OPENCODE_PORT:-4096}"

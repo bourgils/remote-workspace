@@ -2,15 +2,19 @@
 # the exact same workspace-data volume. The core runtime has no Obsidian dependency.
 services:
   workspace:
+    environment:
+      WORKSPACE_BOOTSTRAP_DIRS: vaults
     volumes:
       - machine-state:/state
-      - workspace-data:/workspace
+      - workspace-data:/mnt/workspace
 
   obsidian:
     image: ${OBSIDIAN_IMAGE:?Set OBSIDIAN_IMAGE}
     restart: unless-stopped
+    environment:
+      VAULT_ROOT: /workspace/vaults
     volumes:
-      - workspace-data:/vaults
+      - workspace-data:/workspace
 
 volumes:
   machine-state:

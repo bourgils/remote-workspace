@@ -1,18 +1,18 @@
 # Remote Workspace
 
-Mount any workspace into a persistent Linux userspace and get two browser interfaces:
+Use any volume, bind mount, or remote filesystem as a persistent Linux home and get two browser interfaces:
 
 - **Web shell** on port `7681`: each browser tab is a fresh SSH-like zsh session; closing the tab ends that shell.
-- **OpenCode Web** on port `4096`: OpenCode runs inside the same persistent userspace and sees the same `/workspace`.
+- **OpenCode Web** on port `4096`: OpenCode runs inside the same persistent userspace and opens on the same home.
 
 The design has two independent storage layers:
 
 ```text
-/state/rootfs  -> persistent machine (apt packages, /etc, /usr, /root, configs)
-/workspace     -> user-provided workspace (volume, bind, NFS, adapter, ...)
+/state/rootfs    -> persistent machine (apt packages, /etc, /usr, /opt)
+/home/workspace  -> workspace-backed home (projects, vaults, dotfiles, OpenCode state)
 ```
 
-`WORKSPACE_NAME` is configurable. The internal workspace mount point is always `/workspace`.
+The selected storage is mounted at `/mnt/workspace` by the outer container and injected as `/home/workspace` inside the persistent userspace. `WORKSPACE_NAME` is metadata only.
 
 ## Default machine
 
@@ -32,10 +32,10 @@ Because `/state/rootfs` persists, normal machine mutations persist too:
 apt update
 apt install -y apache2
 bun add -g <package>
-echo 'export FOO=bar' >> ~/.zshrc
+npm install -g <package>
 ```
 
-After `docker compose down` + `up`, those changes remain as long as `machine-state` remains.
+System changes remain in `machine-state`. Projects, dotfiles, NVM installations, and OpenCode user state remain in `workspace-data`.
 
 ## Local deployment
 
@@ -57,11 +57,11 @@ The default Compose publishes both ports for local development.
 OpenCode's current web UI uses a base64-encoded absolute directory in its route. Inside the web shell:
 
 ```bash
-workspace-url /workspace
-workspace-url /workspace/vaults/Personal
+workspace-url ~
+workspace-url ~/vaults/Personal
 ```
 
-Set `OPENCODE_PUBLIC_URL=https://oc.example.com` if you want generated links to use your public domain. The helper refuses paths that resolve outside `/workspace`.
+Set `OPENCODE_PUBLIC_URL=https://oc.example.com` if you want generated links to use your public domain. The helper refuses paths that resolve outside the home.
 
 ## Coolify
 
@@ -75,7 +75,7 @@ dist/coolify-build.yaml
 
 If you publish the OCI image to GHCR first, use `dist/coolify-volume.yaml`.
 
-For the workspace and Obsidian sharing the same volume, use `dist/coolify-obsidian.yaml`.
+For the workspace and Ignis sharing the same on-demand volume through Wakewrap, use `dist/coolify-obsidian.yaml`.
 
 Required variables:
 
@@ -113,13 +113,13 @@ WORKSPACE_HOST_PATH=/mnt/vaults/personal
 
 ## Other storage
 
-The core runtime only requires that the selected storage appears at `/workspace`.
+The core runtime only requires that the selected storage appears at `/mnt/workspace` in the outer container. It becomes `/home/workspace` inside the persistent userspace.
 
 - Docker volume: default `compose.yaml`
 - Existing Docker volume: overlay `storage/external-volume.compose.yaml`
 - NFS: overlay `storage/nfs.compose.yaml`
 - Bind mount: `dist/coolify-bind.yaml` or edit the local Compose
-- S3/object storage: mount through a dedicated external adapter, then bind the resulting mount to `/workspace`
+- S3/object storage: mount through a dedicated external adapter, then bind the resulting mount to `/mnt/workspace`
 
 Example NFS:
 
@@ -132,9 +132,9 @@ See `docs/STORAGE.md`.
 
 ## Obsidian
 
-Obsidian is intentionally not part of the core. `examples/obsidian/compose.yaml` demonstrates the contract: mount the same `workspace-data` volume as one vault under `/vaults` in your chosen Obsidian container.
+Obsidian is intentionally not part of the core. `examples/obsidian/compose.yaml` demonstrates the contract: mount the entire home volume in Ignis and set `VAULT_ROOT` to its `vaults` subdirectory.
 
-In the Coolify Obsidian preset, OpenCode's project picker is rooted at `/workspace`, the shell starts in `/workspace`, and Ignis exposes each direct subdirectory of that same volume as a vault under `/vaults`.
+In the Coolify Obsidian preset, the shell and OpenCode start in `/home/workspace`; only `vaults/` is created automatically. Ignis mounts the same volume at `/workspace` and uses `/workspace/vaults` as its vault root.
 
 ## Security and VM semantics
 
@@ -146,4 +146,4 @@ The outer Docker container remains the isolation boundary. Do not mount the Dock
 
 The initial guest filesystem is copied into `/state/rootfs` once. Rebuilding/updating the OCI image does not overwrite an existing machine. This is intentional: the persistent machine belongs to the user.
 
-To get a fresh machine while retaining the workspace, remove only the `machine-state` volume.
+To get a fresh machine while retaining the home, remove only the `machine-state` volume. To reset projects, dotfiles, and OpenCode user state, remove `workspace-data` as well.
