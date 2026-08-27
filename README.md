@@ -41,7 +41,7 @@ System changes remain in `machine-state`. Projects, dotfiles, NVM installations,
 
 ```bash
 cp .env.example .env
-# Set OPENCODE_SERVER_PASSWORD in .env
+# Set the passwords in .env, or disable the corresponding authentication.
 docker compose up -d --build
 ```
 
@@ -82,10 +82,14 @@ Required variables:
 ```env
 WORKSPACE_NAME=personal
 WORKSPACE_RUNTIME_IMAGE=ghcr.io/YOUR_ORG/remote-workspace:latest
+OPENCODE_AUTH_ENABLED=true
 OPENCODE_SERVER_PASSWORD=...
+SHELL_AUTH_ENABLED=true
 SHELL_USERNAME=workspace
 SHELL_PASSWORD=...
 ```
+
+Set `OPENCODE_AUTH_ENABLED=false` or `SHELL_AUTH_ENABLED=false` to disable Basic Auth for that service. Its password is required only when authentication is enabled.
 
 Additional variables for the Obsidian preset:
 

@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export WORKSPACE_CWD="${WORKSPACE_CWD:-${WORKSPACE_HOME:-/home/workspace}}"
+opencode_env=(/usr/bin/env BROWSER=/bin/true)
+case "${OPENCODE_AUTH_ENABLED:-true}" in
+  true) ;;
+  false) opencode_env=(/usr/bin/env -u OPENCODE_SERVER_USERNAME -u OPENCODE_SERVER_PASSWORD BROWSER=/bin/true) ;;
+  *) echo "OPENCODE_AUTH_ENABLED must be true or false" >&2; exit 64 ;;
+esac
 exec /usr/local/bin/workspace-exec \
-  /usr/bin/env \
-  BROWSER=/bin/true \
+  "${opencode_env[@]}" \
   /opt/bun/bin/opencode web \
   --hostname 0.0.0.0 \
   --port "${OPENCODE_PORT:-4096}"
